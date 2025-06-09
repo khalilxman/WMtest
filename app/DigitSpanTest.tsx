@@ -189,7 +189,7 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
           const newInput = [...input];
           newInput.splice(cursorPosition, 1);
           setInput(newInput);
-      } else if (e.key === 'ArrowLeft') {
+        } else if (e.key === 'ArrowLeft') {
         setCursorPosition(p => Math.max(0, (p ?? 0) - 1));
       } else if (e.key === 'ArrowRight') {
         setCursorPosition(p => Math.min(input.length, (p ?? 0) + 1));
@@ -204,8 +204,8 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
 
 // --- SUB-COMPONENTS ---
 const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: number | null }) => {
-  const { status, result, mode, digits } = state;
-  const getMessage = () => {
+    const { status, result, mode, digits } = state;
+    const getMessage = () => {
     switch (status) {
       case 'generating': return "Generating...";
       case 'displaying': return null;
@@ -213,65 +213,65 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
       case 'result': return `Score: ${result?.score}/${result?.total}`;
       default: return "Press 'New Test'";
     }
-  };
-  return (
-    <div className="h-28 flex flex-col items-center justify-center space-y-2 text-center">
-      {status === 'generating' && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>}
-      {displayedDigit !== null ? (
-        <div className="text-5xl sm:text-6xl font-mono text-blue-700 font-bold">{displayedDigit}</div>
-      ) : (
-        <p className="text-lg text-gray-600">{getMessage()}</p>
-      )}
-       {result && (
-         <p className="text-sm text-gray-500">
-            Correct: {mode === 'forward' ? digits.join(' ') : [...digits].reverse().join(' ')}
-         </p>
-       )}
-    </div>
-  );
+    };
+    return (
+        <div className="h-28 flex flex-col items-center justify-center space-y-2 text-center">
+            {status === 'generating' && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>}
+            {displayedDigit !== null ? (
+            <div className="text-5xl sm:text-6xl font-mono text-blue-700 font-bold">{displayedDigit}</div>
+            ) : (
+            <p className="text-lg text-gray-600">{getMessage()}</p>
+            )}
+            {result && (
+                <p className="text-sm text-gray-500">
+                    Correct: {mode === 'forward' ? digits.join(' ') : [...digits].reverse().join(' ')}
+                </p>
+            )}
+        </div>
+    );
 };
 
 const InputDisplay = ({ 
-  input, 
-  cursorPosition, 
-  setCursorPosition,
-  status 
+    input, 
+    cursorPosition, 
+    setCursorPosition,
+    status 
 }: { 
-  input: number[], 
-  cursorPosition: number | null, 
-  setCursorPosition: (pos: number) => void,
-  status: TestState['status'] 
+    input: number[], 
+    cursorPosition: number | null, 
+    setCursorPosition: (pos: number) => void,
+    status: TestState['status'] 
 }) => {
-  const isInputDisabled = status !== 'input';
-  return (
-    <div 
-      onClick={() => !isInputDisabled && setCursorPosition(input.length)}
-      className={clsx(
-        "h-16 w-full border-2 border-blue-500 rounded-lg px-4 font-mono text-3xl bg-white shadow-inner flex items-center justify-center relative",
-        !isInputDisabled && "cursor-text"
-      )}
-    >
-      <div className="flex items-center tracking-widest">
-        {input.map((digit, index) => (
-          <React.Fragment key={index}>
-            {cursorPosition === index && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
-            <span 
-              className="cursor-pointer px-1"
-              onClick={(e) => {
-                if (!isInputDisabled) {
-                  e.stopPropagation();
-                  setCursorPosition(index + 1);
-                }
-              }}
-            >
-              {digit}
-            </span>
-          </React.Fragment>
-        ))}
-        {cursorPosition === input.length && input.length > 0 && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
-      </div>
-    </div>
-  );
+    const isInputDisabled = status !== 'input';
+    return (
+        <div 
+            onClick={() => !isInputDisabled && setCursorPosition(input.length)}
+            className={clsx(
+                "h-16 w-full border-2 border-blue-500 rounded-lg px-4 font-mono text-3xl bg-white shadow-inner flex items-center justify-center relative",
+                !isInputDisabled && "cursor-text"
+            )}
+        >
+            <div className="flex items-center tracking-widest">
+                {input.map((digit, index) => (
+                <React.Fragment key={index}>
+                    {cursorPosition === index && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
+                    <span 
+                        className="cursor-pointer px-1"
+                        onClick={(e) => {
+                            if (!isInputDisabled) {
+                            e.stopPropagation();
+                            setCursorPosition(index + 1);
+                            }
+                        }}
+                    >
+                    {digit}
+                    </span>
+                </React.Fragment>
+                ))}
+                {cursorPosition === input.length && input.length > 0 && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
+            </div>
+        </div>
+    );
 };
 
 const KeypadAndControls = ({ 
@@ -292,14 +292,14 @@ const KeypadAndControls = ({
     
     const { span, speedIndex, mode } = state;
     const numberKeys = [7, 8, 9, 4, 5, 6, 1, 2, 3];
-    const blueBtn = "bg-blue-600 hover:bg-blue-700 touch-manipulation";
-    const greenBtn = "bg-green-600 hover:bg-green-700 touch-manipulation";
-    const orangeBtn = "bg-orange-500 hover:bg-orange-600 touch-manipulation";
+    const blueBtn = "bg-blue-600 hover:bg-blue-700";
+    const greenBtn = "bg-green-600 hover:bg-green-700";
+    const orangeBtn = "bg-orange-500 hover:bg-orange-600";
     const baseBtn = "text-white py-4 rounded-md font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center";
 
     return (
         <div className="space-y-2">
-            {/* Main Number Pad */}
+            {/* Main Number Pad - This is your "mouse keyboard" */}
             <div className="grid grid-cols-3 gap-2">
                 {numberKeys.map(n => (
                     <button key={n} onClick={() => onNumberClick(n)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>
@@ -308,28 +308,38 @@ const KeypadAndControls = ({
                 ))}
             </div>
 
-            {/* Zero and New Test Row */}
-            <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => onNumberClick(0)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>0</button>
-                {/* Point 1: This button remains green as requested */}
-                <button onClick={onNewTest} disabled={isControlDisabled} className={clsx(baseBtn, greenBtn, "text-xl")}>New Test</button>
+            {/* Zero Button Row */}
+            <div className="grid grid-cols-3 gap-2">
+                 <button onClick={() => onNumberClick(0)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl col-start-2")}>0</button>
             </div>
             
-            {/* Settings Row */}
-            <div className="grid grid-cols-3 gap-2">
-                {/* Point 2 & 3: The whole div is now orange and the buttons inside are disabled by isControlDisabled */}
-                <div className={clsx(baseBtn, orangeBtn, "py-0 text-base")}>
-                    <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span - 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-4 py-4 rounded-l-md disabled:opacity-50 text-xl">–</button>
-                    <span className="flex-grow text-center">Span: {span}</span>
-                    <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span + 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-4 py-4 rounded-r-md disabled:opacity-50 text-xl">+</button>
+            {/* Lower Controls Row */}
+            <div className="grid grid-cols-3 gap-2 items-stretch">
+                {/* Col 1: Span Control (FIXED) */}
+                <div className={clsx(
+                    baseBtn, 
+                    // This now uses isControlDisabled to conditionally apply the gray background
+                    isControlDisabled ? 'bg-gray-400' : orangeBtn, 
+                    "py-0 text-base"
+                )}>
+                    <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span - 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-3 py-3 rounded-l-md disabled:opacity-50 text-lg">–</button>
+                    <span className="flex-grow text-center text-sm font-semibold">Span: {span}</span>
+                    <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span + 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-3 py-3 rounded-r-md disabled:opacity-50 text-lg">+</button>
                 </div>
-                 {/* Point 2 & 3: This button is orange and disabled by isControlDisabled */}
-                <button onClick={() => dispatch({ type: 'SET_SPEED', payload: (speedIndex + 1) % 2 })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-base")}>
-                    Speed: {SPEED_SETTINGS[speedIndex].label}
-                </button>
-                {/* This button is now ORANGE as requested and disabled by isControlDisabled */}
-                <button onClick={() => dispatch({ type: 'SET_MODE', payload: mode === 'forward' ? 'reverse' : 'forward' })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-base")}>
-                    {mode === 'forward' ? 'Forward' : 'Reverse'}
+
+                {/* Col 2: Speed and Mode stacked */}
+                <div className="flex flex-col gap-2">
+                    <button onClick={() => dispatch({ type: 'SET_SPEED', payload: (speedIndex + 1) % 2 })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-xs px-1 py-2 flex-1")}>
+                        Speed: {SPEED_SETTINGS[speedIndex].label}
+                    </button>
+                    <button onClick={() => dispatch({ type: 'SET_MODE', payload: mode === 'forward' ? 'reverse' : 'forward' })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-xs px-1 py-2 flex-1")}>
+                        {mode === 'forward' ? 'Forward' : 'Reverse'}
+                    </button>
+                </div>
+
+                {/* Col 3: New Test Button */}
+                <button onClick={onNewTest} disabled={isControlDisabled} className={clsx(baseBtn, greenBtn, "text-lg h-full")}>
+                    New Test
                 </button>
             </div>
         </div>
@@ -351,8 +361,39 @@ export default function DigitSpanTest() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-xl max-w-sm w-full text-center space-y-4">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4 pt-8">
+      
+      {/* Logo and Link Section */}
+      <div className="text-center w-full max-w-sm md:max-w-2xl px-4">
+            <img 
+                src="/working-memory-logo.jpg" 
+                alt="Working Memory Test Logo"
+                className="w-28 h-28 mx-auto mb-4" 
+            />
+            <a href="/personality-test" className="text-lg text-blue-600 hover:underline font-semibold">
+              Personality test
+            </a>
+      </div>
+
+      {/* Introduction Text Section */}
+      <div className="w-full max-w-sm md:max-w-2xl bg-white shadow-md rounded-lg p-5 my-6 text-left">
+          <p className="text-gray-700 leading-relaxed mb-4">
+              Working Memory is the capacity of our brains to hold a certain amount of novel information and manipulate or "play" with it over a short period.
+          </p>
+          <p className="text-gray-700 leading-relaxed mb-4">
+              Based on Dr. Jordan Peterson's model, we can view the world as two territories: the <strong>Known</strong> (what we've mapped) and the <strong>Unknown</strong> (what we haven't). A problem or threat is often a manifestation of the Unknown. The capacity to process that Unknown and integrate it into our map of the world is Working Memory.
+          </p>
+          <p className="text-gray-700 leading-relaxed mb-4">
+              You see this in action during IQ tests, especially "Culture Fair" tests. A sequence of abstract objects is presented, and you must mentally manipulate the patterns to infer which object fits next. While the famous "7 plus-or-minus 2" is often cited, performance varies greatly. For this kind of test, most people can hold between 3 to 5 items.
+          </p>
+          <h2 className="text-lg font-semibold text-gray-800 mt-4 mb-2">Correlation with Intelligence</h2>
+          <p className="text-gray-700 leading-relaxed">
+             You can think of Working Memory as the brain's "RAM"—its capacity and manipulation ability. This works alongside processing speed, which is the ability to comprehend and assign meaning to that information. Both are crucial aspects of intelligence.
+          </p>
+      </div>
+
+      {/* Main Test Application */}
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow-xl w-full max-w-sm md:max-w-md text-center space-y-4">
         
         <Display state={state} displayedDigit={displayedDigit} />
 
