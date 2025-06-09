@@ -299,6 +299,7 @@ const KeypadAndControls = ({
 
     return (
         <div className="space-y-2">
+            {/* Main Number Pad */}
             <div className="grid grid-cols-3 gap-2">
                 {numberKeys.map(n => (
                     <button key={n} onClick={() => onNumberClick(n)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>
@@ -306,20 +307,28 @@ const KeypadAndControls = ({
                     </button>
                 ))}
             </div>
+
+            {/* Zero and New Test Row */}
             <div className="grid grid-cols-2 gap-2">
                 <button onClick={() => onNumberClick(0)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>0</button>
+                {/* Point 1: This button remains green as requested */}
                 <button onClick={onNewTest} disabled={isControlDisabled} className={clsx(baseBtn, greenBtn, "text-xl")}>New Test</button>
             </div>
+            
+            {/* Settings Row */}
             <div className="grid grid-cols-3 gap-2">
-                 <div className={clsx(baseBtn, orangeBtn, "py-0 text-base")}>
+                {/* Point 2 & 3: The whole div is now orange and the buttons inside are disabled by isControlDisabled */}
+                <div className={clsx(baseBtn, orangeBtn, "py-0 text-base")}>
                     <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span - 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-4 py-4 rounded-l-md disabled:opacity-50 text-xl">–</button>
                     <span className="flex-grow text-center">Span: {span}</span>
                     <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span + 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-4 py-4 rounded-r-md disabled:opacity-50 text-xl">+</button>
                 </div>
+                 {/* Point 2 & 3: This button is orange and disabled by isControlDisabled */}
                 <button onClick={() => dispatch({ type: 'SET_SPEED', payload: (speedIndex + 1) % 2 })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-base")}>
                     Speed: {SPEED_SETTINGS[speedIndex].label}
                 </button>
-                <button onClick={() => dispatch({ type: 'SET_MODE', payload: mode === 'forward' ? 'reverse' : 'forward' })} disabled={isControlDisabled} className={clsx(baseBtn, blueBtn, "text-base")}>
+                {/* This button is now ORANGE as requested and disabled by isControlDisabled */}
+                <button onClick={() => dispatch({ type: 'SET_MODE', payload: mode === 'forward' ? 'reverse' : 'forward' })} disabled={isControlDisabled} className={clsx(baseBtn, orangeBtn, "text-base")}>
                     {mode === 'forward' ? 'Forward' : 'Reverse'}
                 </button>
             </div>
