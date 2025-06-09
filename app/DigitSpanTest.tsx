@@ -4,25 +4,20 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, useReducer } 
 import clsx from 'clsx';
 
 // --- TYPES AND CONSTANTS ---
-
 interface GenerateDigitsResult {
   sequence: number[];
   isValid: boolean;
 }
-
 type SpeedSetting = {
   label: string;
   speed: number;
   displayDuration: number;
 };
-
 const SPEED_SETTINGS: SpeedSetting[] = [
   { label: 'Slow', speed: 1400, displayDuration: 1390 },
   { label: 'Fast', speed: 700, displayDuration: 690 },
 ];
-
 type TestMode = 'forward' | 'reverse';
-
 interface TestState {
   span: number;
   speedIndex: number;
@@ -32,7 +27,6 @@ interface TestState {
   generationWarning: string | null;
   result: { score: number; total: number; isPerfect: boolean } | null;
 }
-
 type TestAction =
   | { type: 'START_GENERATION' }
   | { type: 'SEQUENCE_GENERATED'; payload: GenerateDigitsResult }
@@ -43,7 +37,6 @@ type TestAction =
   | { type: 'SET_SPAN'; payload: number }
   | { type: 'SET_SPEED'; payload: number }
   | { type: 'SET_MODE'; payload: TestMode };
-
 const initialState: TestState = {
   span: 6,
   speedIndex: 0,
@@ -55,7 +48,6 @@ const initialState: TestState = {
 };
 
 // --- REDUCER ---
-
 function testReducer(state: TestState, action: TestAction): TestState {
   switch (action.type) {
     case 'START_GENERATION':
@@ -86,9 +78,9 @@ function testReducer(state: TestState, action: TestAction): TestState {
 }
 
 // --- CUSTOM HOOKS ---
-
 function useDigitSequence(dispatch: React.Dispatch<TestAction>) {
-  const workerRef = useRef<Worker>();
+  // THE FIX IS HERE: Provide `null` as the initial value for the ref.
+  const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
     workerRef.current = new Worker('/generation.worker.js');
@@ -113,7 +105,6 @@ function useSequenceDisplay(state: TestState, dispatch: React.Dispatch<TestActio
   const [displayedDigit, setDisplayedDigit] = useState<number | null>(null);
   const { status, digits, speedIndex } = state;
   const currentSpeed = SPEED_SETTINGS[speedIndex];
-
   useEffect(() => {
     if (status !== 'displaying' || digits.length === 0) {
       setDisplayedDigit(null);
@@ -122,7 +113,6 @@ function useSequenceDisplay(state: TestState, dispatch: React.Dispatch<TestActio
     let index = 0;
     let displayTimeout: NodeJS.Timeout;
     let gapTimeout: NodeJS.Timeout;
-
     const showNext = () => {
       if (index < digits.length) {
         setDisplayedDigit(digits[index]);
@@ -138,14 +128,12 @@ function useSequenceDisplay(state: TestState, dispatch: React.Dispatch<TestActio
       }
     };
     const startTimeout = setTimeout(showNext, 500);
-
     return () => {
       clearTimeout(startTimeout);
       clearTimeout(displayTimeout);
       clearTimeout(gapTimeout);
     };
   }, [status, digits, currentSpeed, dispatch]);
-
   return displayedDigit;
 }
 
@@ -154,18 +142,15 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
   const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   const { span, digits, mode, status } = state;
   const isInputDisabled = status !== 'input';
-
   const resetInput = useCallback(() => {
     setInput([]);
     setCursorPosition(null);
   }, []);
-
   useEffect(() => {
     if (status === 'generating') {
       resetInput();
     }
   }, [status, resetInput]);
-
   const handleInput = useCallback((num: number) => {
     if (isInputDisabled || input.length >= span) return;
     const newPosition = cursorPosition === null ? input.length + 1 : cursorPosition + 1;
@@ -174,7 +159,6 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
     newInput.splice(insertAt, 0, num);
     setInput(newInput);
     setCursorPosition(newPosition);
-
     if (newInput.length === span) {
       const correct = mode === 'forward' ? digits : [...digits].reverse();
       const score = newInput.reduce((acc, val, i) => acc + (val === correct[i] ? 1 : 0), 0);
@@ -182,7 +166,6 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
       setCursorPosition(null);
     }
   }, [input, cursorPosition, isInputDisabled, span, digits, mode, dispatch]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isInputDisabled) return;
@@ -213,15 +196,12 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleInput, isInputDisabled, input, cursorPosition]);
-
   return { input, cursorPosition, setCursorPosition, handleInput };
 }
 
 // --- SUB-COMPONENTS ---
-
 const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: number | null }) => {
-  const { status, result, mode, digits, generationWarning } = state;
-
+  const { status, result, mode, digits } = state;
   const getMessage = () => {
     switch (status) {
       case 'generating': return "Generating...";
@@ -231,7 +211,6 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
       default: return "Press 'New Test'";
     }
   };
-
   return (
     <div className="h-28 flex flex-col items-center justify-center space-y-2 text-center">
       {status === 'generating' && <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>}
@@ -250,7 +229,6 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
 };
 
 const InputDisplay = ({ input, cursorPosition, status }: { input: number[], cursorPosition: number | null, status: TestState['status'] }) => {
-  const isInputDisabled = status !== 'input';
   return (
     <div className="h-16 w-full border-2 border-blue-500 rounded-lg px-4 font-mono text-3xl bg-white shadow-inner flex items-center justify-center relative">
       <div className="flex items-center tracking-widest">
@@ -266,53 +244,27 @@ const InputDisplay = ({ input, cursorPosition, status }: { input: number[], curs
   );
 };
 
-const KeypadAndControls = ({ 
-    state, 
-    dispatch, 
-    onNumberClick, 
-    onNewTest, 
-    isInputDisabled, 
-    isControlDisabled 
-}: { 
-    state: TestState, 
-    dispatch: React.Dispatch<TestAction>, 
-    onNumberClick: (n: number) => void,
-    onNewTest: () => void,
-    isInputDisabled: boolean,
-    isControlDisabled: boolean 
-}) => {
-    
+const KeypadAndControls = ({ state, dispatch, onNumberClick, onNewTest, isInputDisabled, isControlDisabled }: { state: TestState, dispatch: React.Dispatch<TestAction>, onNumberClick: (n: number) => void, onNewTest: () => void, isInputDisabled: boolean, isControlDisabled: boolean }) => {
     const { span, speedIndex, mode } = state;
     const numberKeys = [7, 8, 9, 4, 5, 6, 1, 2, 3];
-
     const blueBtn = "bg-blue-600 hover:bg-blue-700 touch-manipulation";
     const greenBtn = "bg-green-600 hover:bg-green-700 touch-manipulation";
     const orangeBtn = "bg-orange-500 hover:bg-orange-600 touch-manipulation";
-    // Base styles for all buttons, note the font size is removed from here
     const baseBtn = "text-white py-4 rounded-md font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center";
-
     return (
         <div className="space-y-2">
-            {/* Main Number Pad */}
             <div className="grid grid-cols-3 gap-2">
                 {numberKeys.map(n => (
-                    // Apply larger font size specifically to number buttons
                     <button key={n} onClick={() => onNumberClick(n)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>
                         {n}
                     </button>
                 ))}
             </div>
-
-            {/* Zero and New Test Row */}
             <div className="grid grid-cols-2 gap-2">
-                {/* Apply larger font size specifically to 0 and New Test */}
                 <button onClick={() => onNumberClick(0)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>0</button>
                 <button onClick={onNewTest} disabled={isControlDisabled} className={clsx(baseBtn, greenBtn, "text-xl")}>New Test</button>
             </div>
-            
-            {/* Settings Row */}
             <div className="grid grid-cols-3 gap-2">
-                 {/* Apply smaller text-base to the settings buttons */}
                  <div className={clsx(baseBtn, orangeBtn, "py-0 text-base")}>
                     <button onClick={() => dispatch({ type: 'SET_SPAN', payload: span - 1 })} disabled={isControlDisabled} className="hover:bg-orange-600 px-4 py-4 rounded-l-md disabled:opacity-50 text-xl">–</button>
                     <span className="flex-grow text-center">Span: {span}</span>
@@ -330,41 +282,22 @@ const KeypadAndControls = ({
 }
 
 // --- MAIN COMPONENT ---
-
 export default function DigitSpanTest() {
   const [state, dispatch] = useReducer(testReducer, initialState);
   const generateSequence = useDigitSequence(dispatch);
   const displayedDigit = useSequenceDisplay(state, dispatch);
   const { input, cursorPosition, setCursorPosition, handleInput } = useUserInput(state, dispatch);
-  
   const isControlDisabled = useMemo(() => state.status === 'displaying' || state.status === 'generating', [state.status]);
   const isInputDisabled = useMemo(() => state.status !== 'input', [state.status]);
-
   const handleNewTest = () => {
     generateSequence(state.span);
   };
-  
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow-xl max-w-sm w-full text-center space-y-4">
-        
         <Display state={state} displayedDigit={displayedDigit} />
-
-        <InputDisplay 
-            input={input} 
-            cursorPosition={cursorPosition}
-            status={state.status}
-        />
-        
-        <KeypadAndControls
-            state={state}
-            dispatch={dispatch}
-            onNumberClick={handleInput}
-            onNewTest={handleNewTest}
-            isInputDisabled={isInputDisabled}
-            isControlDisabled={isControlDisabled}
-        />
-        
+        <InputDisplay input={input} cursorPosition={cursorPosition} status={state.status} />
+        <KeypadAndControls state={state} dispatch={dispatch} onNumberClick={handleInput} onNewTest={handleNewTest} isInputDisabled={isInputDisabled} isControlDisabled={isControlDisabled} />
       </div>
     </div>
   );
