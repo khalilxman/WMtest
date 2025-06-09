@@ -137,36 +137,43 @@ function useSequenceDisplay(state: TestState, dispatch: React.Dispatch<TestActio
 
 function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
   const [input, setInput] = useState<number[]>([]);
-  const [cursorPosition, setCursorPosition] = useState<number | null>(null);
   const { span, digits, mode, status } = state;
   const isInputDisabled = status !== 'input';
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const resetInput = useCallback(() => {
     setInput([]);
-    setCursorPosition(null);
   }, []);
 
   useEffect(() => {
     if (status === 'generating') {
       resetInput();
     }
+    if (status === 'input') {
+        inputRef.current?.focus();
+    }
   }, [status, resetInput]);
 
   const handleInput = useCallback((num: number) => {
     if (isInputDisabled || input.length >= span) return;
-    const newPosition = cursorPosition === null ? input.length + 1 : cursorPosition + 1;
-    const insertAt = cursorPosition === null ? input.length : cursorPosition;
-    const newInput = [...input];
-    newInput.splice(insertAt, 0, num);
-    setInput(newInput);
-    setCursorPosition(newPosition);
-    if (newInput.length === span) {
-      const correct = mode === 'forward' ? digits : [...digits].reverse();
-      const score = newInput.reduce((acc, val, i) => acc + (val === correct[i] ? 1 : 0), 0);
-      dispatch({ type: 'SET_RESULT', payload: { score, total: span, isPerfect: score === span } });
-      setCursorPosition(null);
+    setInput(current => [...current, num]);
+  }, [input.length, isInputDisabled, span]);
+
+  const handleDelete = useCallback(() => {
+    if (isInputDisabled) return;
+    setInput(current => current.slice(0, -1));
+  }, [isInputDisabled]);
+
+  useEffect(() => {
+    const checkResult = () => {
+        if (input.length === span) {
+            const correct = mode === 'forward' ? digits : [...digits].reverse();
+            const score = input.reduce((acc, val, i) => acc + (val === correct[i] ? 1 : 0), 0);
+            dispatch({ type: 'SET_RESULT', payload: { score, total: span, isPerfect: score === span } });
+        }
     }
-  }, [input, cursorPosition, isInputDisabled, span, digits, mode, dispatch]);
+    checkResult();
+  }, [input, span, digits, mode, dispatch]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -176,30 +183,14 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
         handleInput(parseInt(e.key));
       } else if (e.key === 'Backspace') {
         e.preventDefault();
-        if (cursorPosition === 0) return;
-        const deleteAt = cursorPosition === null ? input.length - 1 : cursorPosition - 1;
-        if (deleteAt < 0) return;
-        const newInput = [...input];
-        newInput.splice(deleteAt, 1);
-        setInput(newInput);
-        setCursorPosition(deleteAt);
-      } else if (e.key === 'Delete') {
-          e.preventDefault();
-          if (cursorPosition === null || cursorPosition >= input.length) return;
-          const newInput = [...input];
-          newInput.splice(cursorPosition, 1);
-          setInput(newInput);
-        } else if (e.key === 'ArrowLeft') {
-        setCursorPosition(p => Math.max(0, (p ?? 0) - 1));
-      } else if (e.key === 'ArrowRight') {
-        setCursorPosition(p => Math.min(input.length, (p ?? 0) + 1));
+        handleDelete();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleInput, isInputDisabled, input, cursorPosition]);
+  }, [handleInput, handleDelete, isInputDisabled]);
 
-  return { input, cursorPosition, setCursorPosition, handleInput };
+  return { input, inputRef, handleInput, handleDelete };
 }
 
 // --- SUB-COMPONENTS ---
@@ -231,49 +222,28 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
     );
 };
 
+// UPDATED: Added whitespace-nowrap and overflow-x-auto to prevent overflow
 const InputDisplay = ({ 
-    input, 
-    cursorPosition, 
-    setCursorPosition,
-    status 
+    input,
+    inputRef
 }: { 
-    input: number[], 
-    cursorPosition: number | null, 
-    setCursorPosition: (pos: number) => void,
-    status: TestState['status'] 
+    input: number[],
+    inputRef: React.RefObject<HTMLInputElement>
 }) => {
-    const isInputDisabled = status !== 'input';
-    return (
-        <div 
-            onClick={() => !isInputDisabled && setCursorPosition(input.length)}
-            className={clsx(
-                "h-16 w-full border-2 border-blue-500 rounded-lg px-4 font-mono text-3xl bg-white shadow-inner flex items-center justify-center relative",
-                !isInputDisabled && "cursor-text"
-            )}
-        >
-            <div className="flex items-center tracking-widest">
-                {input.map((digit, index) => (
-                <React.Fragment key={index}>
-                    {cursorPosition === index && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
-                    <span 
-                        className="cursor-pointer px-1"
-                        onClick={(e) => {
-                            if (!isInputDisabled) {
-                            e.stopPropagation();
-                            setCursorPosition(index + 1);
-                            }
-                        }}
-                    >
-                    {digit}
-                    </span>
-                </React.Fragment>
-                ))}
-                {cursorPosition === input.length && input.length > 0 && <div className="w-0.5 h-8 bg-blue-600 animate-pulse"></div>}
-            </div>
-        </div>
-    );
+  return (
+    <div className="h-16 w-full relative">
+        <input
+            ref={inputRef}
+            type="tel"
+            readOnly
+            value={input.join(' ')}
+            className="h-full w-full border-2 border-blue-500 rounded-lg px-4 font-mono text-3xl bg-white shadow-inner text-center tracking-[.25em] whitespace-nowrap overflow-x-auto"
+        />
+    </div>
+  );
 };
 
+// UPDATED: Removed Backspace button
 const KeypadAndControls = ({ 
     state, 
     dispatch, 
@@ -292,14 +262,14 @@ const KeypadAndControls = ({
     
     const { span, speedIndex, mode } = state;
     const numberKeys = [7, 8, 9, 4, 5, 6, 1, 2, 3];
-    const blueBtn = "bg-blue-600 hover:bg-blue-700";
+    const blueBtn = "bg-blue-600 hover:bg-blue-700 active:scale-100 active:brightness-100 focus:outline-none";
     const greenBtn = "bg-green-600 hover:bg-green-700";
     const orangeBtn = "bg-orange-500 hover:bg-orange-600";
     const baseBtn = "text-white py-4 rounded-md font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center";
 
     return (
         <div className="space-y-2">
-            {/* Main Number Pad - This is your "mouse keyboard" */}
+            {/* Main Number Pad */}
             <div className="grid grid-cols-3 gap-2">
                 {numberKeys.map(n => (
                     <button key={n} onClick={() => onNumberClick(n)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl")}>
@@ -308,17 +278,16 @@ const KeypadAndControls = ({
                 ))}
             </div>
 
-            {/* Zero Button Row */}
+            {/* UPDATED: Backspace button removed */}
             <div className="grid grid-cols-3 gap-2">
                  <button onClick={() => onNumberClick(0)} disabled={isInputDisabled} className={clsx(baseBtn, blueBtn, "text-xl col-start-2")}>0</button>
             </div>
             
             {/* Lower Controls Row */}
             <div className="grid grid-cols-3 gap-2 items-stretch">
-                {/* Col 1: Span Control (FIXED) */}
+                {/* Col 1: Span Control */}
                 <div className={clsx(
                     baseBtn, 
-                    // This now uses isControlDisabled to conditionally apply the gray background
                     isControlDisabled ? 'bg-gray-400' : orangeBtn, 
                     "py-0 text-base"
                 )}>
@@ -347,11 +316,12 @@ const KeypadAndControls = ({
 }
 
 // --- MAIN COMPONENT ---
+// UPDATED: Removed onDelete prop from KeypadAndControls
 export default function DigitSpanTest() {
   const [state, dispatch] = useReducer(testReducer, initialState);
   const generateSequence = useDigitSequence(dispatch);
   const displayedDigit = useSequenceDisplay(state, dispatch);
-  const { input, cursorPosition, setCursorPosition, handleInput } = useUserInput(state, dispatch);
+  const { input, inputRef, handleInput, handleDelete } = useUserInput(state, dispatch);
   
   const isControlDisabled = useMemo(() => state.status === 'displaying' || state.status === 'generating', [state.status]);
   const isInputDisabled = useMemo(() => state.status !== 'input', [state.status]);
@@ -398,10 +368,8 @@ export default function DigitSpanTest() {
         <Display state={state} displayedDigit={displayedDigit} />
 
         <InputDisplay 
-            input={input} 
-            cursorPosition={cursorPosition}
-            setCursorPosition={setCursorPosition}
-            status={state.status}
+            input={input}
+            inputRef={inputRef}
         />
         
         <KeypadAndControls
