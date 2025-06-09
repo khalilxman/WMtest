@@ -79,7 +79,6 @@ function useDigitSequence(dispatch: React.Dispatch<TestAction>) {
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
-    // Use an absolute path to the worker in the public folder
     const workerUrl = new URL('/generation.worker.js', window.location.origin);
     workerRef.current = new Worker(workerUrl);
 
