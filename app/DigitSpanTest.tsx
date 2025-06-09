@@ -79,7 +79,7 @@ function useDigitSequence(dispatch: React.Dispatch<TestAction>) {
   const workerRef = useRef<Worker | null>(null);
 
   useEffect(() => {
-    workerRef.current = new Worker('/workers/generation.worker.js', { type: 'module' });
+    workerRef.current = new Worker('public/generation.worker.js', { type: 'module' });
 
 
 
