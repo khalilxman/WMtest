@@ -186,9 +186,9 @@ function useUserInput(state: TestState, dispatch: React.Dispatch<TestAction>) {
     return { input, handleInput, resetInput, handleRemoveByIndex };
 }
 
-function useButtonFeedback(onClick: Function) {
+function useButtonFeedback(onClick: React.MouseEventHandler<HTMLButtonElement> | undefined) {
     const [isPressed, setIsPressed] = useState(false);
-    const handleClick = (...args: any) => {
+    const handleClick = (...args: [React.MouseEvent<HTMLButtonElement, MouseEvent>]) => {
         setIsPressed(true);
         if (onClick) onClick(...args);
         setTimeout(() => setIsPressed(false), 150);
@@ -247,13 +247,12 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
 };
 
 const InputDisplay = ({ input, onRemove, isDisabled }: { input: number[], onRemove: (index: number) => void, isDisabled: boolean }) => {
-    // UPDATED: Style is now based on current input length, not max span
     const styles = useMemo(() => {
-        const length = input.length || 1; // Use 1 for placeholder to avoid zero
-        if (length <= 8) return { fontSize: '2.25rem', gap: '0.4rem', padding: '0.25rem' }; // Large
-        if (length <= 11) return { fontSize: '2rem', gap: '0.2rem', padding: '0.2rem' };    // Medium
-        if (length <= 14) return { fontSize: '1.75rem', gap: '0.1rem', padding: '0.1rem' }; // Small
-        return { fontSize: '1.5rem', gap: '0rem', padding: '0.1rem' };                   // Smallest, no gap
+        const length = input.length || 1; 
+        if (length <= 8) return { fontSize: '2.25rem', gap: '0.4rem', padding: '0.25rem' };
+        if (length <= 11) return { fontSize: '2rem', gap: '0.2rem', padding: '0.2rem' };
+        if (length <= 14) return { fontSize: '1.75rem', gap: '0.1rem', padding: '0.1rem' };
+        return { fontSize: '1.5rem', gap: '0rem', padding: '0.1rem' };
     }, [input.length]);
 
     return (
@@ -293,9 +292,18 @@ const InputDisplay = ({ input, onRemove, isDisabled }: { input: number[], onRemo
     );
 };
 
-
-const Button = ({ onClick, children, className, disabled, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => {
-    const { isPressed, handleClick } = useButtonFeedback(onClick!);
+const Button = ({
+    onClick,
+    children,
+    className,
+    disabled,
+}: {
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    children?: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+}) => {
+    const { isPressed, handleClick } = useButtonFeedback(onClick);
     return (
         <motion.button
             onClick={handleClick}
@@ -303,7 +311,6 @@ const Button = ({ onClick, children, className, disabled, ...props }: React.Butt
             className={clsx(className)}
             animate={{ scale: isPressed ? 0.95 : 1 }}
             transition={{ type: "spring", stiffness: 500, damping: 15 }}
-            {...props}
         >
             {children}
         </motion.button>
@@ -326,7 +333,8 @@ const KeypadAndControls = ({
     isControlDisabled: boolean
 }) => {
     const { span, speedIndex, mode } = state;
-    const numberKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    // ✅ UPDATED: Changed array order for bottom-up keypad layout
+    const numberKeys = [7, 8, 9, 4, 5, 6, 1, 2, 3];
     const tealBtn = "bg-[#0A7E7A] hover:bg-[#086864] text-white";
     const orangeBtn = "bg-orange-500 hover:bg-orange-600 text-white";
     const baseBtn = "rounded-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500";
