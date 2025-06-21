@@ -199,6 +199,15 @@ function useButtonFeedback(onClick: React.MouseEventHandler<HTMLButtonElement> |
 // --- SUB-COMPONENTS ---
 const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: number | null }) => {
     const { status, result, mode, digits, span } = state;
+
+    const getResultColor = () => {
+        if (!result) return 'text-gray-600';
+        const percentage = (result.score / result.total) * 100;
+        if (percentage === 100) return 'text-green-500 font-bold';
+        if (percentage >= 80) return 'text-orange-500 font-bold';
+        return 'text-red-500 font-bold';
+    };
+
     const getMessage = () => {
         switch (status) {
             case 'generating': return "Generating...";
@@ -229,7 +238,10 @@ const Display = ({ state, displayedDigit }: { state: TestState; displayedDigit: 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="text-xl text-gray-600"
+                        className={clsx(
+                            "text-xl",
+                            status === 'result' ? getResultColor() : 'text-gray-600'
+                        )}
                     >
                         {getMessage()}
                     </motion.p>
@@ -395,12 +407,12 @@ export default function DigitSpanTest() {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col p-2 sm:p-4 font-sans">
              <header className="w-full max-w-sm mx-auto px-4 pt-4 shrink-0">
-                <img 
-                    src="/working-memory-logo.svg" 
-                    alt="Working Memory Logo"
-                    className="w-28 h-28 mx-auto mb-4" 
-                />
-            </header>
+                 <img 
+                     src="/working-memory-logo.svg" 
+                     alt="Working Memory Logo"
+                     className="w-28 h-28 mx-auto mb-4" 
+                 />
+             </header>
             
             <main className="flex-grow flex flex-col items-center justify-center w-full py-4">
                 <div className="bg-[#f7f7f7] p-4 rounded-2xl shadow-xl w-full max-w-xs text-center space-y-4 flex flex-col h-full">
