@@ -26,6 +26,7 @@ interface TestState {
     digits: number[];
     status: 'idle' | 'generating' | 'displaying' | 'input' | 'result';
     result: { score: number; total: number; isPerfect: boolean; userInput: number[] } | null;
+    testId: number;
 }
 type TestAction =
     | { type: 'START_GENERATION' }
@@ -44,13 +45,15 @@ const initialState: TestState = {
     digits: [],
     status: 'idle',
     result: null,
+    testId: 0,
 };
 
 // --- REDUCER ---
 function testReducer(state: TestState, action: TestAction): TestState {
     switch (action.type) {
         case 'START_GENERATION':
-            return { ...initialState, span: state.span, speedIndex: state.speedIndex, mode: state.mode, status: 'generating' };
+            // ✅ UPDATED: This action now only sets the status to generating
+            return { ...state, status: 'generating' };
         case 'SEQUENCE_GENERATED':
             return { ...state, digits: action.payload.sequence };
         case 'START_DISPLAY':
@@ -60,7 +63,15 @@ function testReducer(state: TestState, action: TestAction): TestState {
         case 'SET_RESULT':
             return { ...state, status: 'result', result: action.payload };
         case 'RESET':
-            return { ...initialState, span: state.span, speedIndex: state.speedIndex, mode: state.mode };
+            // ✅ UPDATED: This action now fully resets the board for a new test
+            // and increments the testId to ensure components with this key are remounted
+            return { 
+                ...initialState, // Start from the base initial state
+                span: state.span, // But keep the user's settings for convenience
+                speedIndex: state.speedIndex, 
+                mode: state.mode, 
+                testId: state.testId + 1, // Increment for the new test
+            };
         case 'SET_SPAN':
             if (state.status === 'displaying' || state.status === 'generating') return state;
             return { ...state, span: Math.max(3, Math.min(18, action.payload)) };
@@ -80,7 +91,25 @@ function useDigitSequence(dispatch: React.Dispatch<TestAction>) {
     const workerRef = useRef<Worker | null>(null);
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const workerUrl = new URL('/generation.worker.js', window.location.origin);
+        // In a real project, this worker file would be in the /public folder
+        const workerBlob = new Blob([`
+            self.onmessage = (e) => {
+                const { length } = e.data;
+                const sequence = [];
+                let prev = -1;
+                for (let i = 0; i < length; i++) {
+                    let digit;
+                    do {
+                        digit = Math.floor(Math.random() * 10);
+                    } while (digit === prev);
+                    sequence.push(digit);
+                    prev = digit;
+                }
+                self.postMessage({ sequence, isValid: true });
+            };
+        `], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
         workerRef.current = new Worker(workerUrl);
         workerRef.current.onmessage = (e: MessageEvent<GenerateDigitsResult>) => {
             dispatch({ type: 'SEQUENCE_GENERATED', payload: e.data });
@@ -88,12 +117,14 @@ function useDigitSequence(dispatch: React.Dispatch<TestAction>) {
         };
         return () => {
             workerRef.current?.terminate();
+            URL.revokeObjectURL(workerUrl);
         };
     }, [dispatch]);
     return useCallback((length: number) => {
+        // ✅ UPDATED: Now dispatches START_GENERATION to kick off the loading state
         dispatch({ type: 'START_GENERATION' });
         workerRef.current?.postMessage({ length });
-    }, []);
+    }, [dispatch]);
 }
 
 function useSequenceDisplay(state: TestState, dispatch: React.Dispatch<TestAction>) {
@@ -345,7 +376,6 @@ const KeypadAndControls = ({
     isControlDisabled: boolean
 }) => {
     const { span, speedIndex, mode } = state;
-    // ✅ UPDATED: Changed array order for bottom-up keypad layout
     const numberKeys = [7, 8, 9, 4, 5, 6, 1, 2, 3];
     const tealBtn = "bg-[#0A7E7A] hover:bg-[#086864] text-white";
     const orangeBtn = "bg-orange-500 hover:bg-orange-600 text-white";
@@ -398,10 +428,14 @@ export default function DigitSpanTest() {
     const isInputDisabled = useMemo(() => state.status !== 'input', [state.status]);
 
     const handleNewTest = () => {
+        // ✅ UPDATED: Dispatch RESET immediately to clear the UI state first.
         dispatch({ type: 'RESET' });
+        
+        // Then, start the new sequence generation in the next event loop tick.
+        // This ensures the UI updates from the RESET before the 'generating' state begins.
         setTimeout(() => {
             generateSequence(state.span);
-        }, 50);
+        }, 10);
     };
 
     return (
@@ -417,7 +451,7 @@ export default function DigitSpanTest() {
             <main className="flex-grow flex flex-col items-center justify-center w-full py-4">
                 <div className="bg-[#f7f7f7] p-4 rounded-2xl shadow-xl w-full max-w-xs text-center space-y-4 flex flex-col h-full">
                     <div className="flex-grow flex items-center justify-center">
-                        <Display state={state} displayedDigit={displayedDigit} />
+                        <Display key={state.testId} state={state} displayedDigit={displayedDigit} />
                     </div>
                     
                     <div className="shrink-0 space-y-4">
